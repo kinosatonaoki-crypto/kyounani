@@ -1,0 +1,25 @@
+{
+  "name": "今日何着ていく？ 上富田版",
+  "short_name": "上富田お天気",
+  "description": "上富田町の天気から服装・持ち物・おすすめスポットを表示するアプリ",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2986cc",
+  "theme_color": "#2986cc",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
