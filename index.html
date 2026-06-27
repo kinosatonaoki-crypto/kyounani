@@ -5,270 +5,360 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="上富田お天気">
+<meta name="apple-mobile-web-app-title" content="今日何着てく？in上富田">
 <meta name="theme-color" content="#2986cc">
 <link rel="manifest" href="manifest.json">
 <link rel="apple-touch-icon" href="icons/icon-192.png">
-<title>今日何着ていく？ 上富田版</title>
+<title>今日何着てく？ in 上富田</title>
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'YuGothic', 'Noto Sans JP', sans-serif;
+  min-height: 100vh; min-height: 100dvh;
+  background: linear-gradient(160deg,#1a6bb0 0%,#2986cc 35%,#56b3e8 70%,#87ceeb 100%);
+  transition: background 1.5s ease; overflow-x: hidden;
+}
+#app { padding: 0 0 56px; min-height: 100vh; }
 
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'YuGothic', 'Noto Sans JP', sans-serif;
-    min-height: 100vh;
-    min-height: 100dvh;
-    background: linear-gradient(160deg, #1a6bb0 0%, #2986cc 35%, #56b3e8 70%, #87ceeb 100%);
-    transition: background 1.5s ease;
-    overflow-x: hidden;
-  }
+/* Loading */
+#loading { min-height:100vh; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:20px; }
+.loader-emoji { font-size:64px; animation:float 2s ease-in-out infinite; }
+@keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+.spinner { width:40px; height:40px; border:3px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin 1s linear infinite; }
+@keyframes spin { to{transform:rotate(360deg)} }
+.status-text { color:#fff; font-size:16px; font-weight:600; opacity:.9; }
 
-  #app { padding: 0 0 48px; min-height: 100vh; }
+/* Cards */
+.card {
+  background: rgba(255,255,255,.15);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border-radius:22px; border:1px solid rgba(255,255,255,.28);
+  box-shadow: 0 8px 32px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.2);
+  padding:22px 18px; margin-bottom:14px;
+}
+.stitle { display:flex; align-items:center; gap:8px; margin-bottom:14px; font-size:17px; font-weight:700; color:#fff; letter-spacing:.3px; }
 
-  /* ── Loading ── */
-  #loading {
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 20px;
-  }
-  .loader-emoji { font-size: 64px; animation: float 2s ease-in-out infinite; }
-  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
-  .spinner { width: 40px; height: 40px; border: 3px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s linear infinite; }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .status-text { color: #fff; font-size: 16px; font-weight: 600; opacity: .9; letter-spacing: .5px; }
+/* Hero */
+#hero {
+  text-align:center; padding:48px 20px 32px;
+  padding-top: max(48px, env(safe-area-inset-top,0px) + 36px);
+}
+.app-title { font-size:13px; color:rgba(255,255,255,.75); font-weight:600; letter-spacing:2px; margin-bottom:4px; }
+.hero-loc { font-size:18px; color:#fff; font-weight:700; letter-spacing:.5px; margin-bottom:12px; display:flex; align-items:center; justify-content:center; gap:6px; }
+.hero-emoji { font-size:80px; line-height:1; margin-bottom:4px; }
+.hero-wlabel { font-size:17px; color:rgba(255,255,255,.88); margin-bottom:-4px; }
+.hero-temp { font-size:88px; font-weight:100; color:#fff; line-height:1.05; letter-spacing:-5px; margin:4px 0; }
+.hero-feels { font-size:16px; color:rgba(255,255,255,.7); margin-bottom:10px; }
+.hero-range { font-size:17px; color:rgba(255,255,255,.88); margin-bottom:20px; }
+.hero-stats { display:flex; justify-content:center; gap:28px; margin-top:4px; }
+.hero-stat-icon { font-size:22px; }
+.hero-stat-val { font-size:19px; font-weight:700; color:#fff; }
+.hero-stat-lbl { font-size:12px; color:rgba(255,255,255,.65); margin-top:2px; }
 
-  /* ── Cards ── */
-  .card {
-    background: rgba(255,255,255,.15);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-radius: 22px;
-    border: 1px solid rgba(255,255,255,.28);
-    box-shadow: 0 8px 32px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.2);
-    padding: 22px 18px;
-    margin-bottom: 14px;
-  }
+/* ===== 服装カード（大型・目立つ） ===== */
+#card-outfit {
+  background: rgba(255,255,255,.22);
+  border:2px solid rgba(255,255,255,.45);
+  box-shadow: 0 12px 40px rgba(0,0,0,.25), inset 0 1px 0 rgba(255,255,255,.3);
+  padding: 20px 16px 18px;
+}
+.outfit-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.outfit-title-block { display:flex; align-items:center; gap:8px; }
+.outfit-main-label { font-size:22px; font-weight:800; color:#fff; letter-spacing:-.3px; }
+.outfit-sub-label { font-size:14px; color:rgba(255,255,255,.8); margin-top:3px; }
 
-  .stitle {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 14px;
-    font-size: 17px;
-    font-weight: 700;
-    color: #fff;
-    letter-spacing: .3px;
-  }
+/* 寒がり・暑がり 2カラム */
+.outfit-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.outfit-col {
+  background: rgba(255,255,255,.14);
+  border-radius:16px; border:1px solid rgba(255,255,255,.22);
+  padding:14px 12px;
+}
+.outfit-col-title { font-size:13px; font-weight:700; color:rgba(255,255,255,.9); margin-bottom:10px; display:flex; align-items:center; gap:5px; letter-spacing:.3px; }
+.outfit-col-title.cold-type { color:#bfdbfe; }
+.outfit-col-title.hot-type  { color:#fde68a; }
+.outfit-item {
+  display:flex; align-items:center; gap:7px;
+  background:rgba(255,255,255,.15); border-radius:20px;
+  padding:7px 11px; margin-bottom:6px; font-size:14px; font-weight:600; color:#fff;
+}
+.outfit-item:last-child { margin-bottom:0; }
+.outfit-item-icon { font-size:16px; flex-shrink:0; }
 
-  /* ── Hero ── */
-  #hero {
-    text-align: center;
-    padding: 56px 20px 36px;
-    padding-top: max(56px, env(safe-area-inset-top, 0px) + 40px);
-  }
-  .hero-loc   { font-size: 15px; color: rgba(255,255,255,.85); font-weight: 600; letter-spacing: 1px; margin-bottom: 10px; }
-  .hero-emoji { font-size: 86px; line-height: 1; margin-bottom: 4px; }
-  .hero-wlabel{ font-size: 17px; color: rgba(255,255,255,.85); margin-bottom: -4px; }
-  .hero-temp  { font-size: 90px; font-weight: 100; color: #fff; line-height: 1.05; letter-spacing: -5px; margin: 4px 0; }
-  .hero-feels { font-size: 16px; color: rgba(255,255,255,.72); margin-bottom: 12px; }
-  .hero-range { font-size: 17px; color: rgba(255,255,255,.88); margin-bottom: 20px; }
-  .hero-stats { display: flex; justify-content: center; gap: 32px; margin-top: 4px; }
-  .hero-stat-icon { font-size: 24px; }
-  .hero-stat-val  { font-size: 20px; font-weight: 700; color: #fff; }
-  .hero-stat-lbl  { font-size: 12px; color: rgba(255,255,255,.65); margin-top: 2px; }
+/* 持ち物 */
+.belong-item { display:flex; align-items:center; margin-bottom:12px; }
+.belong-item:last-child { margin-bottom:0; }
+.belong-dot { width:9px; height:9px; border-radius:50%; flex-shrink:0; margin-right:12px; }
+.belong-txt { font-size:18px; color:#fff; }
 
-  /* ── Tags ── */
-  .tag {
-    background: rgba(255,255,255,.22);
-    border-radius: 22px;
-    padding: 7px 16px;
-    font-size: 14px;
-    color: #fff;
-    font-weight: 600;
-    display: inline-block;
-    margin: 3px 3px 3px 0;
-  }
+/* AI comment */
+.ai-card { background: rgba(30,10,60,.3); border:1px solid rgba(255,255,255,.2); }
+.ai-header { display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+.ai-badge { background:rgba(167,139,250,.35); border-radius:20px; padding:4px 12px; font-size:12px; font-weight:700; color:#e9d5ff; letter-spacing:.5px; }
+.ai-text { font-size:17px; color:rgba(255,255,255,.95); line-height:2; }
+@keyframes shimmer { 0%,100%{opacity:.6} 50%{opacity:1} }
+.shimmer { animation:shimmer 1.5s infinite; color:rgba(255,255,255,.6); }
 
-  /* ── Belongings ── */
-  .belong-item { display: flex; align-items: center; margin-bottom: 12px; }
-  .belong-item:last-child { margin-bottom: 0; }
-  .belong-dot  { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; margin-right: 12px; }
-  .belong-txt  { font-size: 18px; color: #fff; }
+/* Spots */
+.spot-card {
+  background:rgba(255,255,255,.12); border-radius:16px; padding:14px;
+  border:1px solid rgba(255,255,255,.16); display:flex; align-items:flex-start; gap:14px; margin-bottom:10px;
+}
+.spot-card:last-child { margin-bottom:0; }
+.spot-icon { font-size:36px; line-height:1; flex-shrink:0; }
+.spot-name { font-size:16px; font-weight:700; color:#fff; margin-bottom:4px; }
+.spot-reason { font-size:14px; color:rgba(255,255,255,.77); line-height:1.6; }
 
-  /* ── AI comment ── */
-  .ai-text { font-size: 17px; color: rgba(255,255,255,.93); line-height: 1.95; }
-  @keyframes shimmer { 0%,100%{opacity:.6} 50%{opacity:1} }
-  .shimmer { animation: shimmer 1.5s infinite; color: rgba(255,255,255,.65); }
+/* 上富田情報 */
+.info-card { background:rgba(0,60,20,.25); border:1px solid rgba(120,255,150,.2); }
+.info-item { display:flex; align-items:flex-start; gap:12px; margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid rgba(255,255,255,.1); }
+.info-item:last-child { margin-bottom:0; padding-bottom:0; border-bottom:none; }
+.info-icon { font-size:28px; flex-shrink:0; margin-top:2px; }
+.info-title { font-size:14px; font-weight:700; color:#86efac; margin-bottom:3px; }
+.info-body { font-size:13px; color:rgba(255,255,255,.8); line-height:1.65; }
 
-  /* ── Spots ── */
-  .spot-card {
-    background: rgba(255,255,255,.12);
-    border-radius: 16px;
-    padding: 16px;
-    border: 1px solid rgba(255,255,255,.16);
-    display: flex;
-    align-items: flex-start;
-    gap: 16px;
-    margin-bottom: 10px;
-  }
-  .spot-card:last-child { margin-bottom: 0; }
-  .spot-icon   { font-size: 38px; line-height: 1; flex-shrink: 0; }
-  .spot-name   { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 5px; }
-  .spot-reason { font-size: 14px; color: rgba(255,255,255,.77); line-height: 1.65; }
+/* Index grid */
+.idx-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.idx-item { background:rgba(255,255,255,.11); border-radius:16px; padding:14px 12px; text-align:center; }
+.idx-icon { font-size:26px; margin-bottom:5px; }
+.idx-lbl { font-size:14px; color:rgba(255,255,255,.8); margin-bottom:7px; }
+.star { font-size:18px; }
 
-  /* ── Index grid ── */
-  .idx-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .idx-item  { background: rgba(255,255,255,.11); border-radius: 16px; padding: 16px 12px; text-align: center; }
-  .idx-icon  { font-size: 28px; margin-bottom: 6px; }
-  .idx-lbl   { font-size: 14px; color: rgba(255,255,255,.8); margin-bottom: 8px; }
-  .star      { font-size: 19px; }
+/* Tomorrow */
+.tmr-range { margin-bottom:10px; }
+.tmr-high { font-size:24px; font-weight:700; color:#fff; }
+.tmr-sep { color:rgba(255,255,255,.4); margin:0 8px; }
+.tmr-low { font-size:19px; color:rgba(255,255,255,.82); }
+.tmr-diff { font-size:15px; color:rgba(255,255,255,.82); line-height:1.8; }
+.tmr-hint { margin-top:8px; font-size:14px; color:rgba(255,255,255,.7); }
 
-  /* ── Tomorrow ── */
-  .tmr-range { margin-bottom: 10px; }
-  .tmr-high  { font-size: 24px; font-weight: 700; color: #fff; }
-  .tmr-sep   { color: rgba(255,255,255,.4); margin: 0 8px; }
-  .tmr-low   { font-size: 19px; color: rgba(255,255,255,.82); }
-  .tmr-diff  { font-size: 15px; color: rgba(255,255,255,.82); line-height: 1.8; }
-  .tmr-hint  { margin-top: 8px; font-size: 14px; color: rgba(255,255,255,.7); }
+/* Hyoutan-senpai mascot SVG */
+.mascot { display:inline-block; }
+.mascot-float { animation:float 3s ease-in-out infinite; }
+.mascot-bounce { animation:bounce 2s ease-in-out infinite; }
+@keyframes bounce { 0%,100%{transform:translateY(0) rotate(-3deg)} 50%{transform:translateY(-6px) rotate(3deg)} }
 
-  /* ── Footer ── */
-  .footer {
-    text-align: center;
-    color: rgba(255,255,255,.38);
-    font-size: 12px;
-    margin-top: 10px;
-    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
-  }
+/* Footer */
+.footer { text-align:center; color:rgba(255,255,255,.38); font-size:12px; margin-top:10px; padding-bottom:max(8px,env(safe-area-inset-bottom,0px)); }
 
-  /* ── Error ── */
-  #error-view {
-    display: none;
-    min-height: 80vh;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px;
-    text-align: center;
-    gap: 16px;
-  }
-  .err-icon  { font-size: 52px; }
-  .err-title { font-size: 20px; font-weight: 700; color: #fff; }
-  .err-body  { font-size: 15px; color: rgba(255,255,255,.78); line-height: 1.7; }
-  .retry-btn {
-    margin-top: 8px;
-    background: rgba(255,255,255,.2);
-    border: 1px solid rgba(255,255,255,.45);
-    border-radius: 24px;
-    color: #fff;
-    padding: 12px 30px;
-    font-size: 16px;
-    font-weight: 600;
-    cursor: pointer;
-    font-family: inherit;
-    transition: background .2s;
-  }
-  .retry-btn:active { background: rgba(255,255,255,.35); }
+/* Error */
+#error-view { display:none; min-height:80vh; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; gap:16px; }
+.err-icon { font-size:52px; }
+.err-title { font-size:20px; font-weight:700; color:#fff; }
+.err-body { font-size:15px; color:rgba(255,255,255,.78); line-height:1.7; }
+.retry-btn { margin-top:8px; background:rgba(255,255,255,.2); border:1px solid rgba(255,255,255,.45); border-radius:24px; color:#fff; padding:12px 30px; font-size:16px; font-weight:600; cursor:pointer; font-family:inherit; }
 
-  /* ── Animations ── */
-  .fade { opacity: 0; animation: fadeUp .7s ease both; }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-  .d0{animation-delay:.02s} .d1{animation-delay:.14s} .d2{animation-delay:.24s}
-  .d3{animation-delay:.34s} .d4{animation-delay:.44s} .d5{animation-delay:.54s}
-  .d6{animation-delay:.64s}
+/* Animations */
+.fade { opacity:0; animation:fadeUp .7s ease both; }
+@keyframes fadeUp { from{opacity:0;transform:translateY(18px)} to{opacity:1;transform:translateY(0)} }
+.d0{animation-delay:.02s}.d1{animation-delay:.12s}.d2{animation-delay:.22s}
+.d3{animation-delay:.32s}.d4{animation-delay:.42s}.d5{animation-delay:.52s}
+.d6{animation-delay:.62s}.d7{animation-delay:.72s}
 
-  #content { display: none; padding: 0 14px; }
+#content { display:none; padding:0 14px; }
 </style>
 </head>
 <body>
 <div id="app">
 
-  <div id="loading">
-    <div class="loader-emoji">🌤️</div>
-    <div class="spinner"></div>
-    <div class="status-text" id="status-text">上富田町の天気を取得中...</div>
+<!-- Loading -->
+<div id="loading">
+  <div style="font-size:72px; animation:float 2s ease-in-out infinite">
+    <!-- ひょうたんせんぱい loading版 -->
+    <svg width="80" height="100" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+      <ellipse cx="40" cy="30" rx="18" ry="22" fill="#8BC34A"/>
+      <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7CB342"/>
+      <ellipse cx="40" cy="30" rx="10" ry="14" fill="#AED581" opacity=".6"/>
+      <circle cx="34" cy="25" r="3" fill="#333"/>
+      <circle cx="46" cy="25" r="3" fill="#333"/>
+      <path d="M34 34 Q40 40 46 34" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+      <ellipse cx="28" cy="48" rx="5" ry="3" fill="#6a9e30" opacity=".8"/>
+      <ellipse cx="52" cy="48" rx="5" ry="3" fill="#6a9e30" opacity=".8"/>
+      <path d="M30 10 Q40 2 50 10" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <circle cx="30" cy="10" r="3" fill="#5D4037"/>
+      <circle cx="50" cy="10" r="3" fill="#5D4037"/>
+    </svg>
   </div>
-
-  <div id="error-view">
-    <div class="err-icon">⚠️</div>
-    <div class="err-title">天気情報を取得できませんでした</div>
-    <div class="err-body" id="err-body">インターネット接続を確認してから<br>もう一度お試しください。</div>
-    <button class="retry-btn" onclick="location.reload()">再試行する</button>
-  </div>
-
-  <div id="content">
-    <div id="hero" class="fade d0">
-      <div class="hero-loc">📍 上富田町</div>
-      <div class="hero-emoji"  id="h-emoji">—</div>
-      <div class="hero-wlabel" id="h-wlabel">—</div>
-      <div class="hero-temp"   id="h-temp">—°</div>
-      <div class="hero-feels"  id="h-feels">体感 —℃</div>
-      <div class="hero-range"  id="h-range">↑ —℃ | ↓ —℃</div>
-      <div class="hero-stats">
-        <div><div class="hero-stat-icon">💧</div><div class="hero-stat-val" id="h-hum">—</div><div class="hero-stat-lbl">湿度</div></div>
-        <div><div class="hero-stat-icon">☔</div><div class="hero-stat-val" id="h-rain">—</div><div class="hero-stat-lbl">降水確率</div></div>
-        <div><div class="hero-stat-icon">💨</div><div class="hero-stat-val" id="h-wind">—</div><div class="hero-stat-lbl">風速</div></div>
-      </div>
-    </div>
-
-    <div class="card fade d1" id="card-outfit">
-      <div class="stitle">👕 今日の服装</div>
-      <div id="out-main" style="font-size:20px;font-weight:700;color:#fff;margin-bottom:6px">—</div>
-      <div id="out-sub"  style="font-size:15px;color:rgba(255,255,255,.82);margin-bottom:14px">—</div>
-      <div id="out-tags"></div>
-    </div>
-
-    <div class="card fade d2" id="card-belong" style="display:none">
-      <div class="stitle">🎒 持ち物</div>
-      <div id="belong-list"></div>
-    </div>
-
-    <div class="card fade d3">
-      <div class="stitle">🤖 今日のひとこと</div>
-      <div class="ai-text" id="ai-text"><span class="shimmer">AIコメントを生成中...</span></div>
-    </div>
-
-    <div class="card fade d4">
-      <div class="stitle">📍 今日のおすすめスポット</div>
-      <div id="spots-list"></div>
-    </div>
-
-    <div class="card fade d5">
-      <div class="stitle">☀️ 今日の指数</div>
-      <div class="idx-grid" id="idx-grid"></div>
-    </div>
-
-    <div class="card fade d6">
-      <div class="stitle">🌅 明日の服装</div>
-      <div class="tmr-range">
-        <span class="tmr-high" id="tmr-high">—</span>
-        <span class="tmr-sep">/</span>
-        <span class="tmr-low"  id="tmr-low">—</span>
-      </div>
-      <div class="tmr-diff" id="tmr-diff">—</div>
-      <div class="tmr-hint" id="tmr-hint">—</div>
-    </div>
-
-    <div class="footer" id="footer"></div>
-  </div>
-
+  <div class="spinner"></div>
+  <div class="status-text" id="status-text">ひょうたんせんぱいが天気を調べてるよ〜</div>
 </div>
 
-<script>
-/* ── 定数 ─────────────────────── */
-const LAT = 33.696;
-const LON = 135.428;
+<!-- Error -->
+<div id="error-view">
+  <div class="err-icon">😵</div>
+  <div class="err-title">うーん、取得できなかったよ</div>
+  <div class="err-body" id="err-body">通信状況を確認してからもう一度試してね。</div>
+  <button class="retry-btn" onclick="location.reload()">もう一回試す</button>
+</div>
 
-/* ── ヘルパー ─────────────────── */
+<!-- Content -->
+<div id="content">
+
+  <!-- Hero -->
+  <div id="hero" class="fade d0">
+    <div class="app-title">TODAY'S OUTFIT</div>
+    <div class="hero-loc">
+      <!-- ひょうたんせんぱい 小 -->
+      <svg width="28" height="36" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="40" cy="30" rx="18" ry="22" fill="#8BC34A"/>
+        <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7CB342"/>
+        <ellipse cx="40" cy="30" rx="10" ry="14" fill="#AED581" opacity=".6"/>
+        <circle cx="34" cy="25" r="3.5" fill="#333"/>
+        <circle cx="46" cy="25" r="3.5" fill="#333"/>
+        <path d="M34 34 Q40 40 46 34" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M30 10 Q40 2 50 10" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="10" r="3" fill="#5D4037"/>
+        <circle cx="50" cy="10" r="3" fill="#5D4037"/>
+      </svg>
+      今日何着てく？ in 上富田
+    </div>
+    <div class="hero-emoji" id="h-emoji">—</div>
+    <div class="hero-wlabel" id="h-wlabel">—</div>
+    <div class="hero-temp" id="h-temp">—°</div>
+    <div class="hero-feels" id="h-feels">体感 —℃</div>
+    <div class="hero-range" id="h-range">↑ —℃ | ↓ —℃</div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-icon">💧</div><div class="hero-stat-val" id="h-hum">—</div><div class="hero-stat-lbl">湿度</div></div>
+      <div><div class="hero-stat-icon">☔</div><div class="hero-stat-val" id="h-rain">—</div><div class="hero-stat-lbl">降水確率</div></div>
+      <div><div class="hero-stat-icon">💨</div><div class="hero-stat-val" id="h-wind">—</div><div class="hero-stat-lbl">風速</div></div>
+    </div>
+  </div>
+
+  <!-- 服装カード（大型） -->
+  <div id="card-outfit" class="card fade d1">
+    <div class="outfit-header">
+      <div class="outfit-title-block">
+        <div>
+          <div class="outfit-main-label" id="out-main">—</div>
+          <div class="outfit-sub-label" id="out-sub">—</div>
+        </div>
+      </div>
+      <!-- ひょうたんせんぱい 服装カード内 -->
+      <svg class="mascot mascot-bounce" width="52" height="66" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="40" cy="30" rx="18" ry="22" fill="#8BC34A"/>
+        <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7CB342"/>
+        <ellipse cx="40" cy="30" rx="10" ry="14" fill="#AED581" opacity=".6"/>
+        <circle cx="34" cy="25" r="3.5" fill="#333"/>
+        <circle cx="46" cy="25" r="3.5" fill="#333"/>
+        <path d="M33 35 Q40 42 47 35" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="28" cy="48" rx="5" ry="3" fill="#6a9e30" opacity=".8"/>
+        <ellipse cx="52" cy="48" rx="5" ry="3" fill="#6a9e30" opacity=".8"/>
+        <path d="M30 10 Q40 2 50 10" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="10" r="3" fill="#5D4037"/>
+        <circle cx="50" cy="10" r="3" fill="#5D4037"/>
+        <!-- 服のアイテム -->
+        <text x="40" y="80" text-anchor="middle" font-size="18">👕</text>
+      </svg>
+    </div>
+
+    <div class="outfit-grid">
+      <!-- 寒がり派 -->
+      <div class="outfit-col">
+        <div class="outfit-col-title cold-type">🧣 寒がり派</div>
+        <div id="outfit-cold"></div>
+      </div>
+      <!-- 暑がり派 -->
+      <div class="outfit-col">
+        <div class="outfit-col-title hot-type">🌡️ 暑がり派</div>
+        <div id="outfit-hot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 持ち物 -->
+  <div class="card fade d2" id="card-belong" style="display:none">
+    <div class="stitle">🎒 今日の持ち物</div>
+    <div id="belong-list"></div>
+  </div>
+
+  <!-- AIコメント（ひょうたんせんぱいより） -->
+  <div class="card ai-card fade d3">
+    <div class="ai-header">
+      <svg class="mascot mascot-float" width="40" height="50" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="40" cy="30" rx="18" ry="22" fill="#8BC34A"/>
+        <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7CB342"/>
+        <ellipse cx="40" cy="30" rx="10" ry="14" fill="#AED581" opacity=".6"/>
+        <circle cx="34" cy="24" r="3.5" fill="#333"/>
+        <circle cx="46" cy="24" r="3.5" fill="#333"/>
+        <!-- ウインク -->
+        <path d="M33 33 Q40 40 47 33" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+        <path d="M30 10 Q40 2 50 10" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="10" r="3" fill="#5D4037"/>
+        <circle cx="50" cy="10" r="3" fill="#5D4037"/>
+      </svg>
+      <div>
+        <div class="stitle" style="margin-bottom:2px">ひょうたんせんぱいより</div>
+        <div class="ai-badge">✨ AI一言</div>
+      </div>
+    </div>
+    <div class="ai-text" id="ai-text"><span class="shimmer">ひょうたんせんぱいが一言考え中…</span></div>
+  </div>
+
+  <!-- おすすめスポット -->
+  <div class="card fade d4">
+    <div class="stitle">📍 今日のおすすめスポット</div>
+    <div id="spots-list"></div>
+  </div>
+
+  <!-- 上富田情報 -->
+  <div class="card info-card fade d5">
+    <div class="stitle">
+      <svg width="22" height="28" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg">
+        <ellipse cx="40" cy="30" rx="18" ry="22" fill="#8BC34A"/>
+        <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7CB342"/>
+        <circle cx="34" cy="25" r="3" fill="#333"/>
+        <circle cx="46" cy="25" r="3" fill="#333"/>
+        <path d="M34 34 Q40 39 46 34" stroke="#333" stroke-width="2" fill="none" stroke-linecap="round"/>
+        <path d="M30 10 Q40 2 50 10" stroke="#5D4037" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <circle cx="30" cy="10" r="3" fill="#5D4037"/><circle cx="50" cy="10" r="3" fill="#5D4037"/>
+      </svg>
+      上富田って、こんなところ
+    </div>
+    <div id="kamitonda-info"></div>
+  </div>
+
+  <!-- 指数 -->
+  <div class="card fade d6">
+    <div class="stitle">☀️ 今日の指数</div>
+    <div class="idx-grid" id="idx-grid"></div>
+  </div>
+
+  <!-- 明日 -->
+  <div class="card fade d7">
+    <div class="stitle">🌅 明日の服装チェック</div>
+    <div class="tmr-range">
+      <span class="tmr-high" id="tmr-high">—</span>
+      <span class="tmr-sep">/</span>
+      <span class="tmr-low" id="tmr-low">—</span>
+    </div>
+    <div class="tmr-diff" id="tmr-diff">—</div>
+    <div class="tmr-hint" id="tmr-hint">—</div>
+  </div>
+
+  <div class="footer" id="footer">
+    <svg width="14" height="18" viewBox="0 0 80 100" xmlns="http://www.w3.org/2000/svg" style="vertical-align:middle;margin-right:4px;opacity:.6">
+      <ellipse cx="40" cy="30" rx="18" ry="22" fill="#8BC34A"/>
+      <ellipse cx="40" cy="68" rx="24" ry="28" fill="#7CB342"/>
+      <circle cx="33" cy="26" r="3" fill="#333"/><circle cx="47" cy="26" r="3" fill="#333"/>
+      <path d="M33 35 Q40 41 47 35" stroke="#333" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+    </svg>
+    <span id="footer-text"></span>
+  </div>
+</div><!-- /content -->
+
+</div><!-- /app -->
+
+<script>
+const LAT = 33.696, LON = 135.428;
+
 function isNight() { const h = new Date().getHours(); return h < 6 || h >= 18; }
 
 function getBg(code, night) {
   if (night) return "linear-gradient(160deg,#0a0f2c 0%,#1a2356 40%,#2d1b6e 100%)";
-  if ([61,63,65,80,81,82,95,96,99].includes(code)) return "linear-gradient(160deg,#2c3a4a 0%,#3d5166 40%,#4a6080 100%)";
-  if (code === 3 || [45,48].includes(code)) return "linear-gradient(160deg,#4a4e5a 0%,#5c6272 40%,#6e7585 100%)";
-  if (code === 2) return "linear-gradient(160deg,#2a5a8a 0%,#4272a0 40%,#6090b8 100%)";
-  return "linear-gradient(160deg,#1a6bb0 0%,#2986cc 35%,#56b3e8 70%,#87ceeb 100%)";
+  if ([61,63,65,80,81,82,95,96,99].includes(code)) return "linear-gradient(160deg,#2c3a4a,#3d5166 40%,#4a6080)";
+  if (code===3||[45,48].includes(code)) return "linear-gradient(160deg,#4a4e5a,#5c6272 40%,#6e7585)";
+  if (code===2) return "linear-gradient(160deg,#2a5a8a,#4272a0 40%,#6090b8)";
+  return "linear-gradient(160deg,#1a6bb0,#2986cc 35%,#56b3e8 70%,#87ceeb)";
 }
 function getAccent(code, night) {
   if (night) return "#a78bfa";
@@ -276,94 +366,138 @@ function getAccent(code, night) {
   return "#fbbf24";
 }
 function wEmoji(c) {
-  if (c===0) return "☀️"; if (c===1) return "🌤️"; if (c===2) return "⛅"; if (c===3) return "☁️";
-  if ([45,48].includes(c)) return "🌫️"; if ([51,53,55].includes(c)) return "🌦️";
-  if ([61,63,65,80,81,82].includes(c)) return "🌧️"; if ([71,73,75].includes(c)) return "❄️";
-  if ([95,96,99].includes(c)) return "⛈️"; return "🌤️";
+  if(c===0)return"☀️";if(c===1)return"🌤️";if(c===2)return"⛅";if(c===3)return"☁️";
+  if([45,48].includes(c))return"🌫️";if([51,53,55].includes(c))return"🌦️";
+  if([61,63,65,80,81,82].includes(c))return"🌧️";if([71,73,75].includes(c))return"❄️";
+  if([95,96,99].includes(c))return"⛈️";return"🌤️";
 }
 function wLabel(c) {
-  const m={0:"快晴",1:"晴れ",2:"晴れ時々曇り",3:"曇り",45:"霧",48:"霧",51:"霧雨",53:"霧雨",55:"霧雨",61:"雨",63:"雨",65:"雨",80:"にわか雨",81:"にわか雨",82:"にわか雨",71:"雪",73:"雪",75:"雪",95:"雷雨",96:"雷雨",99:"雷雨"};
-  return m[c] || "くもり";
+  const m={0:"快晴",1:"晴れ",2:"晴れ時々曇り",3:"曇り",45:"霧",48:"霧",51:"霧雨",53:"霧雨",55:"霧雨",
+    61:"雨",63:"雨",65:"雨",80:"にわか雨",81:"にわか雨",82:"にわか雨",71:"雪",73:"雪",75:"雪",95:"雷雨",96:"雷雨",99:"雷雨"};
+  return m[c]||"くもり";
 }
 function isRainy(c) { return [51,53,55,61,63,65,66,67,80,81,82,95,96,99].includes(c); }
 
-function getOutfit(temp, rain, wind) {
-  let clothes=[], items=[];
-  if (temp>=30)      { clothes=["半袖","帽子"];              items=["水分補給","日焼け止め"]; }
-  else if (temp>=25) { clothes=["半袖","薄手の羽織り"];        items=["水分補給"]; }
-  else if (temp>=20) { clothes=["長袖 または 半袖＋羽織り"];   items=["薄手のカーディガン"]; }
-  else if (temp>=15) { clothes=["長袖","薄手ジャケット"];      items=[]; }
-  else if (temp>=10) { clothes=["ニット","ジャケット"];        items=["マフラー"]; }
-  else               { clothes=["コート","厚手の服"];          items=["手袋","マフラー"]; }
-  if (rain >= 40) items.push("折りたたみ傘");
-  if (wind >= 8)  items.push("風を通しにくい上着");
+/* ─ 服装ロジック（寒がり・暑がり分け） ─ */
+function getOutfitBoth(temp, rain, wind) {
+  // 寒がり派（+2℃感覚）
+  const cold = getOutfitForTemp(temp - 2, rain, wind);
+  // 暑がり派（-2℃感覚）
+  const hot  = getOutfitForTemp(temp + 2, rain, wind);
+  return { cold, hot };
+}
+
+function getOutfitForTemp(t, rain, wind) {
+  let clothes = [], items = [];
+  if (t >= 30)      { clothes = [{ i:"👕","t":"半袖"}, {i:"🧢","t":"帽子"}];                      items = [{i:"💧","t":"水分補給"},{i:"🧴","t":"日焼け止め"}]; }
+  else if (t >= 25) { clothes = [{i:"👕","t":"半袖"}, {i:"🧥","t":"薄手の羽織り"}];               items = [{i:"💧","t":"水分補給"}]; }
+  else if (t >= 20) { clothes = [{i:"👔","t":"長袖"}, {i:"🧥","t":"羽織り"}];                     items = []; }
+  else if (t >= 15) { clothes = [{i:"👔","t":"長袖"}, {i:"🧥","t":"薄手ジャケット"}];             items = []; }
+  else if (t >= 10) { clothes = [{i:"🧶","t":"ニット"}, {i:"🧥","t":"ジャケット"}];               items = [{i:"🧣","t":"マフラー"}]; }
+  else              { clothes = [{i:"🧥","t":"コート"}, {i:"🧶","t":"厚手のニット"}];             items = [{i:"🧤","t":"手袋"},{i:"🧣","t":"マフラー"}]; }
+  if (rain >= 40) items.push({i:"☂️","t":"折りたたみ傘"});
+  if (wind >= 8)  clothes.push({i:"🧥","t":"防風アウター"});
   return { clothes, items };
 }
+
 function outLabel(t) {
-  if (t>=30) return "半袖がおすすめです"; if (t>=25) return "半袖で快適に過ごせます";
-  if (t>=20) return "長袖または半袖に羽織りを"; if (t>=15) return "長袖とジャケットがあると安心";
-  if (t>=10) return "しっかり温かい服装で"; return "コートが必要な寒さです";
+  if(t>=30)return"半袖一択でしょ！";if(t>=25)return"半袖が気持ちいい〜";
+  if(t>=20)return"長袖かな？悩むね〜";if(t>=15)return"しっかり長袖で";
+  if(t>=10)return"ニット＆ジャケット推奨";return"コートの出番です！";
 }
 function subLabel(t, r) {
-  if (r>=40) return "雨の準備もお忘れなく"; if (t>=30) return "日中は特に熱中症に注意を";
-  if (t>=25) return "朝晩は薄手の羽織りがあると安心"; if (t>=20) return "日中との寒暖差に注意を";
-  if (t>=15) return "朝晩は肌寒くなります"; return "外出時は防寒対策をしっかりと";
+  if(r>=40)return"傘は絶対持っといてね";if(t>=30)return"熱中症、ほんま気をつけて";
+  if(t>=25)return"朝晩はちょい涼しいかも";if(t>=20)return"寒暖差に要注意やで";
+  if(t>=15)return"朝晩はひんやりするで";return"外出は防寒バッチリで！";
 }
 
-const SPOTS = {
-  hot:      [{n:"道の駅 くちくまの",r:"涼しい館内でゆっくり休めます",i:"🏪"},{n:"彦五郎公園",r:"木陰で涼みながらお散歩できます",i:"🌳"},{n:"ジェラート店（富田川沿い）",r:"冷たいスイーツで涼をとりましょう",i:"🍦"}],
-  pleasant: [{n:"富田川河川敷",r:"川沿いのさわやかな風が気持ちいい日です",i:"🏞️"},{n:"岡川八幡神社",r:"静かな境内でゆったり参拝できます",i:"⛩️"},{n:"ウォーキングコース",r:"絶好のウォーキング日和です",i:"🚶"}],
-  rainy:    [{n:"上富田町立図書館",r:"雨の日はゆっくり読書を楽しみましょう",i:"📚"},{n:"上富田文化会館",r:"屋内で文化・芸術に触れられます",i:"🎭"},{n:"町内のカフェ",r:"温かい飲み物でほっとひと息つきましょう",i:"☕"}],
-  cold:     [{n:"温かい食事ができる飲食店",r:"体の芯から温まりましょう",i:"🍜"},{n:"道の駅 くちくまの",r:"温かい地元グルメが楽しめます",i:"🏪"},{n:"上富田文化会館",r:"屋内でのんびり過ごせます",i:"🎭"}],
-};
-function getSpots(t, c) { if(isRainy(c)) return SPOTS.rainy; if(t>=27) return SPOTS.hot; if(t<=12) return SPOTS.cold; return SPOTS.pleasant; }
+/* ─ 上富田情報 ─ */
+const KAMITONDA_INFO = [
+  {
+    i:"🌊",
+    title:"富田川",
+    body:"日本有数の清流・富田川は上富田が誇る宝もの。夏は川遊び、秋は紅葉が楽しめます。"
+  },
+  {
+    i:"🌿",
+    title:"世界遺産 熊野古道",
+    body:"紀伊山地の霊場と参詣道が世界遺産。上富田町内にも古道ルートが通っています。"
+  },
+  {
+    i:"🍋",
+    title:"くちくまの梅・柑橘",
+    body:"道の駅くちくまのでは、地元の梅製品や温州みかんなど和歌山ならではの特産品が揃います。"
+  },
+];
 
-function getIdx(t, c, w, h) {
-  const r = isRainy(c);
-  return {
-    hs: t>=35?5:t>=32?4:t>=28?3:t>=24?2:1,
-    la: r?1:h>80?2:w>5?5:t>22?4:3,
-    wk: r?1:t>=35?2:t>=30?3:t>=12?5:3,
-    ex: r?2:t>=33?1:t>=28?3:t>=10?5:3,
+/* ─ スポット ─ */
+const SPOTS = {
+  hot:[
+    {n:"道の駅 くちくまの",r:"涼しい館内でゆっくり。梅アイスも食べたいな〜",i:"🏪"},
+    {n:"彦五郎公園",r:"木陰でのんびり。ひょうたんせんぱいも木陰が好き",i:"🌳"},
+    {n:"富田川河川敷",r:"清流で足だけでもつかると最高です",i:"🌊"},
+  ],
+  pleasant:[
+    {n:"富田川河川敷",r:"川沿いをお散歩。気持ちいい風が吹いてるよ",i:"🏞️"},
+    {n:"岡川八幡神社",r:"静かな境内で深呼吸。熊野の空気は格別",i:"⛩️"},
+    {n:"熊野古道（上富田ルート）",r:"世界遺産の古道をゆっくり歩いてみよう",i:"🌿"},
+  ],
+  rainy:[
+    {n:"上富田町立図書館",r:"雨の日は本でしょ。ゆっくり読書タイム",i:"📚"},
+    {n:"上富田文化会館",r:"文化・芸術で心を豊かに",i:"🎭"},
+    {n:"道の駅 くちくまの",r:"お土産見てるだけでも楽しいよ〜",i:"☕"},
+  ],
+  cold:[
+    {n:"道の駅 くちくまの 食堂",r:"温かい地元グルメで体の芯から温まろう",i:"🍜"},
+    {n:"上富田文化会館",r:"暖かい屋内でのんびりがベスト",i:"🎭"},
+    {n:"温泉施設（近隣）",r:"白浜温泉も近い！冷えた体を温めに行こう",i:"♨️"},
+  ],
+};
+function getSpots(t,c){if(isRainy(c))return SPOTS.rainy;if(t>=27)return SPOTS.hot;if(t<=12)return SPOTS.cold;return SPOTS.pleasant;}
+
+function getIdx(t,c,w,h){
+  const r=isRainy(c);
+  return{
+    hs:t>=35?5:t>=32?4:t>=28?3:t>=24?2:1,
+    la:r?1:h>80?2:w>5?5:t>22?4:3,
+    wk:r?1:t>=35?2:t>=30?3:t>=12?5:3,
+    ex:r?2:t>=33?1:t>=28?3:t>=10?5:3,
   };
 }
-function starsHTML(n, color) {
-  let s=""; for(let i=1;i<=5;i++) s+=`<span class="star" style="color:${i<=n?color:"rgba(255,255,255,.2)"}">\u2605</span>`; return s;
-}
+function starsHTML(n,col){let s="";for(let i=1;i<=5;i++)s+=`<span class="star" style="color:${i<=n?col:"rgba(255,255,255,.2)"}">\u2605</span>`;return s;}
+function setStatus(t){const el=document.getElementById("status-text");if(el)el.textContent=t;}
 
-function setStatus(txt) { const el=document.getElementById("status-text"); if(el) el.textContent=txt; }
-
-/* ── AI コメント (フォールバック) ── */
+/* ─ AI フォールバック（ユーモア版） ─ */
 function aiCommentFallback(w) {
-  if (isRainy(w.code)) return "今日は雨が降っています。外出の際は傘をお持ちください。室内でゆっくりお過ごしいただくのもいいですね。";
-  if (w.temp >= 30) return `今日は${w.temp}℃と暑い一日です。熱中症に十分注意して、こまめに水分補給をしてください。なるべく涼しい時間帯に外出されることをおすすめします。`;
-  if (w.temp >= 22) return `今日は${wLabel(w.code)}で過ごしやすい陽気です。散歩や買い物にぴったりの一日ですよ。水分補給もお忘れなく。`;
-  if (w.temp >= 15) return `今日は少し肌寒くなっています。薄手の上着を一枚持って出かけると安心です。天気は${wLabel(w.code)}です。`;
-  return `今日は気温が${w.temp}℃と冷え込んでいます。しっかり温かい服装でお出かけください。温かい飲み物で体を温めながら、ゆったりお過ごしください。`;
+  const wl = wLabel(w.code);
+  if(isRainy(w.code)) return `今日は${wl}です☔ 傘なしで出たら確実に後悔するやつ。ひょうたんせんぱいも「折りたたみ傘、鞄に入れといてや〜」って言うてます。富田川も今日はいつもより元気かもね。`;
+  if(w.temp>=33) return `気温${w.temp}℃！これは上富田も本気の夏や〜🔥 ひょうたんせんぱいも「外おるだけで焼けるで！」って警告中。水分は多めに、日陰に逃げながら行動しよう。熊野の木陰が恋しくなる日ですね。`;
+  if(w.temp>=27) return `今日は${w.temp}℃、${wl}の上富田町です☀️ ひょうたんせんぱいが「富田川に行こうや〜！」ってウキウキしてます。日焼け止め忘れずに！暑さ対策バッチリなら最高の一日になりますよ。`;
+  if(w.temp>=20) return `${w.temp}℃で${wl}〜ちょうどええやん！🌿 ひょうたんせんぱいが「今日は熊野古道の日やで」って言うてます。上富田はこのくらいが一番気持ちええんよね。散歩に出かけてみては？`;
+  if(w.temp>=13) return `今日は${w.temp}℃、少し肌寒いですね🍂 ひょうたんせんぱいも「一枚多めに着てや〜」って言うてます。でもこれくらいが富田川沿いのお散歩には気持ちええんよね。温かい飲み物も忘れずに。`;
+  return `${w.temp}℃はなかなか寒いで〜❄️ ひょうたんせんぱいも今日はコートの中から顔だけ出してます。道の駅くちくまので温かい地元グルメを食べて、しっかり体を温めてお出かけください！`;
 }
 
-/* ── 天気取得 ─────────────────── */
+/* ─ 天気取得 ─ */
 async function fetchWeather() {
-  const url =
-    `https://api.open-meteo.com/v1/forecast` +
-    `?latitude=${LAT}&longitude=${LON}` +
-    `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m` +
-    `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max` +
-    `&timezone=Asia%2FTokyo&forecast_days=2`;
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}`
+    + `&current=temperature_2m,apparent_temperature,relative_humidity_2m,weather_code,wind_speed_10m`
+    + `&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max`
+    + `&timezone=Asia%2FTokyo&forecast_days=2`;
   const res = await fetch(url);
-  if (!res.ok) throw new Error(`天気 API エラー (HTTP ${res.status})`);
+  if(!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-/* ── AI コメント取得 ─────────── */
+/* ─ AI コメント取得 ─ */
 async function fetchAIComment(w) {
   try {
     const res = await fetch("/api/comment", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ weatherData: w }),
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({weatherData: w}),
     });
-    if (!res.ok) throw new Error("api/comment error");
+    if(!res.ok) throw new Error("api error");
     const data = await res.json();
     return data.comment || aiCommentFallback(w);
   } catch {
@@ -371,7 +505,7 @@ async function fetchAIComment(w) {
   }
 }
 
-/* ── 描画 ─────────────────────── */
+/* ─ 描画 ─ */
 function renderWeather(w) {
   const night = isNight();
   document.body.style.background = getBg(w.code, night);
@@ -386,62 +520,75 @@ function renderWeather(w) {
   document.getElementById("h-rain").textContent   = w.rain + "%";
   document.getElementById("h-wind").textContent   = w.wind + "m/s";
 
-  const outfit = getOutfit(w.temp, w.rain, w.wind);
+  // 服装（寒がり・暑がり）
   document.getElementById("out-main").textContent = outLabel(w.temp);
   document.getElementById("out-sub").textContent  = subLabel(w.temp, w.rain);
-  document.getElementById("out-tags").innerHTML   = outfit.clothes.map(c => `<span class="tag">👔 ${c}</span>`).join("");
 
+  const both = getOutfitBoth(w.temp, w.rain, w.wind);
+  document.getElementById("outfit-cold").innerHTML =
+    both.cold.clothes.map(it=>`<div class="outfit-item"><span class="outfit-item-icon">${it.i}</span>${it.t}</div>`).join("")
+    + both.cold.items.map(it=>`<div class="outfit-item" style="background:rgba(147,197,253,.2)"><span class="outfit-item-icon">${it.i}</span>${it.t}</div>`).join("");
+  document.getElementById("outfit-hot").innerHTML =
+    both.hot.clothes.map(it=>`<div class="outfit-item"><span class="outfit-item-icon">${it.i}</span>${it.t}</div>`).join("")
+    + both.hot.items.map(it=>`<div class="outfit-item" style="background:rgba(252,211,77,.2)"><span class="outfit-item-icon">${it.i}</span>${it.t}</div>`).join("");
+
+  // 持ち物（共通）
+  const sharedItems = [];
+  if(w.rain>=40) sharedItems.push({i:"☂️",t:"折りたたみ傘"});
+  if(w.wind>=8)  sharedItems.push({i:"🌬️",t:"防風アウター"});
   const belongCard = document.getElementById("card-belong");
-  if (outfit.items.length > 0) {
-    belongCard.style.display = "";
-    document.getElementById("belong-list").innerHTML = outfit.items
-      .map(it => `<div class="belong-item"><span class="belong-dot" style="background:${acc}"></span><span class="belong-txt">${it}</span></div>`)
-      .join("");
+  if(sharedItems.length>0){
+    belongCard.style.display="";
+    document.getElementById("belong-list").innerHTML =
+      sharedItems.map(it=>`<div class="belong-item"><span class="belong-dot" style="background:${acc}"></span><span class="belong-txt">${it.i} ${it.t}</span></div>`).join("");
   } else {
-    belongCard.style.display = "none";
+    belongCard.style.display="none";
   }
 
+  // スポット
   const spots = getSpots(w.maxTemp, w.code);
   document.getElementById("spots-list").innerHTML = spots
-    .map(s => `<div class="spot-card"><div class="spot-icon">${s.i}</div><div><div class="spot-name">${s.n}</div><div class="spot-reason">${s.r}</div></div></div>`)
+    .map(s=>`<div class="spot-card"><div class="spot-icon">${s.i}</div><div><div class="spot-name">${s.n}</div><div class="spot-reason">${s.r}</div></div></div>`)
     .join("");
 
+  // 上富田情報
+  document.getElementById("kamitonda-info").innerHTML = KAMITONDA_INFO
+    .map(info=>`<div class="info-item"><div class="info-icon">${info.i}</div><div><div class="info-title">${info.title}</div><div class="info-body">${info.body}</div></div></div>`)
+    .join("");
+
+  // 指数
   const idx = getIdx(w.temp, w.code, w.wind, w.hum);
   document.getElementById("idx-grid").innerHTML = [
     ["🌡️","熱中症",idx.hs,"#f87171"],
     ["🧺","洗濯",  idx.la,"#60a5fa"],
     ["🚶","散歩",  idx.wk,"#34d399"],
     ["🏃","運動",  idx.ex,"#fbbf24"],
-  ].map(([ic,lb,v,c]) =>
-    `<div class="idx-item"><div class="idx-icon">${ic}</div><div class="idx-lbl">${lb}</div><div>${starsHTML(v,c)}</div></div>`
-  ).join("");
+  ].map(([ic,lb,v,c])=>`<div class="idx-item"><div class="idx-icon">${ic}</div><div class="idx-lbl">${lb}</div><div>${starsHTML(v,c)}</div></div>`).join("");
 
+  // 明日
   const diff = w.tMax2 - w.maxTemp;
-  const diffTxt = diff > 0 ? `明日は今日より${Math.abs(diff)}℃高くなります。`
-                : diff < 0 ? `明日は今日より${Math.abs(diff)}℃低くなります。`
-                : "明日は今日とほぼ同じ気温です。";
   document.getElementById("tmr-high").textContent = "↑ " + w.tMax2 + "℃";
   document.getElementById("tmr-low").textContent  = "↓ " + w.tMin2 + "℃";
-  document.getElementById("tmr-diff").textContent = diffTxt;
-  document.getElementById("tmr-hint").textContent = outLabel(w.tMax2) + "の予定でご準備ください。";
+  document.getElementById("tmr-diff").textContent = diff>0?`明日は今日より${Math.abs(diff)}℃高くなりそう🌡️`:diff<0?`明日は今日より${Math.abs(diff)}℃下がるで🍃`:"明日は今日とほぼ同じ気温かな〜";
+  document.getElementById("tmr-hint").textContent = outLabel(w.tMax2) + "の日になりそうです。";
 
-  const now = new Date().toLocaleString("ja-JP", { month:"long", day:"numeric", hour:"2-digit", minute:"2-digit" });
-  document.getElementById("footer").textContent = "Open-Meteo · " + now + " 取得";
+  // Footer
+  const now = new Date().toLocaleString("ja-JP",{month:"long",day:"numeric",hour:"2-digit",minute:"2-digit"});
+  document.getElementById("footer-text").textContent = "Open-Meteo · " + now + " 取得";
 }
 
-/* ── メイン ──────────────────── */
+/* ─ メイン ─ */
 async function init() {
   try {
-    setStatus("上富田町の天気を取得中...");
+    setStatus("ひょうたんせんぱいが天気を調べてるよ〜");
     const data  = await fetchWeather();
-    const cur   = data.current;
-    const daily = data.daily;
+    const cur   = data.current, daily = data.daily;
     const w = {
       temp:    Math.round(cur.temperature_2m),
       feels:   Math.round(cur.apparent_temperature),
       hum:     Math.round(cur.relative_humidity_2m),
       code:    cur.weather_code,
-      wind:    Math.round(cur.wind_speed_10m * 10) / 10,
+      wind:    Math.round(cur.wind_speed_10m*10)/10,
       maxTemp: Math.round(daily.temperature_2m_max[0]),
       minTemp: Math.round(daily.temperature_2m_min[0]),
       rain:    daily.precipitation_probability_max[0],
@@ -450,28 +597,24 @@ async function init() {
     };
 
     renderWeather(w);
-    document.getElementById("loading").style.display  = "none";
-    document.getElementById("content").style.display  = "block";
+    document.getElementById("loading").style.display = "none";
+    document.getElementById("content").style.display = "block";
 
-    setStatus("AIコメントを生成中...");
+    setStatus("AIコメント生成中…");
     const aiText = await fetchAIComment(w);
-    const aiEl   = document.getElementById("ai-text");
-    if (aiEl) aiEl.textContent = aiText;
+    const aiEl = document.getElementById("ai-text");
+    if(aiEl) aiEl.textContent = aiText;
 
-  } catch (e) {
+  } catch(e) {
     document.getElementById("loading").style.display = "none";
     const ev = document.getElementById("error-view");
     ev.style.display = "flex";
-    document.getElementById("err-body").textContent =
-      "インターネット接続を確認してください。\n(" + (e.message || "不明なエラー") + ")";
+    document.getElementById("err-body").textContent = "通信を確認してね。\n(" + (e.message||"不明") + ")";
   }
 }
 
-/* ── Service Worker 登録 (PWA) ─ */
-if ("serviceWorker" in navigator) {
-  window.addEventListener("load", () => {
-    navigator.serviceWorker.register("/sw.js").catch(() => {});
-  });
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{ navigator.serviceWorker.register("/sw.js").catch(()=>{}); });
 }
 
 init();
